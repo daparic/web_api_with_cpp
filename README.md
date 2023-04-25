@@ -1,3 +1,5 @@
+![Alt text](docs/diagram.png?raw=true "diagram")
+
 ## Table of content
 
 - [Table of content](#table-of-content)
