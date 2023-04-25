@@ -18,5 +18,4 @@ private:
 
     Service _service;
     shared_ptr<IServiceSettingsFactory> _settings_factory;
-
 };

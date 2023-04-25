@@ -4,6 +4,19 @@
 #include <iomanip>
 #include "json.hpp"
 
+#define ADDRESS "tcp://localhost:1883"
+#define CLIENTID "bbb"
+#define USERNAME "mazik"
+#define PASSWORD "ntiwistb"
+
+int on_message(void *context, char *topicName, int topicLen, MQTTClient_message *message) {
+    char* payload = message->payload;
+    printf("Received operation %s\n", payload);
+    MQTTClient_freeMessage(&message);
+    MQTTClient_free(topicName);
+    return 1;
+}
+
 using namespace nlohmann;
 
 CalcResourceFactory::CalcResourceFactory() {
@@ -16,6 +29,17 @@ CalcResourceFactory::CalcResourceFactory() {
         [&](const auto session) {
             get_handler(session);
         });
+
+    MQTTClient_create(&_client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    conn_opts.username = USERNAME;
+    conn_opts.password = PASSWORD;
+    MQTTClient_setCallbacks(_client, NULL, NULL, on_message, NULL);
+    int rc;
+    if ((rc = MQTTClient_connect(_client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
+        printf("Failed to connect, return code %d\n", rc);
+        exit(-1);
+    }    
 }
 
 shared_ptr<Resource> CalcResourceFactory::get_resource() const {
@@ -23,6 +47,9 @@ shared_ptr<Resource> CalcResourceFactory::get_resource() const {
 }
 
 float CalcResourceFactory::calculate(float num1, float num2, string operation) {
+    string oper = operation + ":" + std::to_string(num1) + "," + std::to_string(num2);
+    publish(_client, "ops", oper.c_str());
+
     if(operation == "add") {
         return num1 + num2;
     }
